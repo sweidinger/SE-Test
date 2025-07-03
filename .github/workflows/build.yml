@@ -34,7 +34,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller
+        pip install pyinstaller pillow
         pip install -r requirements.txt
 
     - name: Install system dependencies (Linux)
@@ -45,7 +45,13 @@ jobs:
 
     - name: Build executable
       run: |
-        pyinstaller ${{ matrix.build-args }} passwort_generator_gui_mit_settings.py
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          pyinstaller ${{ matrix.build-args }} --icon=SE-Icon.ico passwort_generator_gui_mit_settings.py
+        else
+          # For macOS and Linux, Pillow will convert .ico to the appropriate format
+          pyinstaller ${{ matrix.build-args }} --icon=SE-Icon.ico passwort_generator_gui_mit_settings.py
+        fi
+      shell: bash
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
