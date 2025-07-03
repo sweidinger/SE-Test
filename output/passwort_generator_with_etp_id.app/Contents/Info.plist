@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>passwort_generator_with_etp_id</string>
+	<key>CFBundleExecutable</key>
+	<string>passwort_generator_with_etp_id</string>
+	<key>CFBundleIconFile</key>
+	<string>generated-de17b1cd69ab1746993aaa71b5cc59539df02a5f43fbc2d9984e2f3c815048f6.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>passwort_generator_with_etp_id</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>passwort_generator_with_etp_id</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.0.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+</dict>
+</plist>
