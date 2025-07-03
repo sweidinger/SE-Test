@@ -1,6 +1,6 @@
-# Password Generator with Settings
+# IoT-DACH PanelServer Password Generator
 
-This is a GUI-based password generator application built with Python and Tkinter.
+This is a GUI-based password generator application for IoT-DACH PanelServer systems, built with Python and Tkinter.
 
 ## Features
 

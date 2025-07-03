@@ -68,7 +68,7 @@ def create_gui():
     settings = load_settings()
 
     root = tk.Tk()
-    root.title("Passwort Generator mit Einstellungen")
+    root.title("IoT-DACH PanelServer Password Generator")
     root.geometry("600x400")
 
     tab_control = ttk.Notebook(root)
