@@ -1,0 +1,46 @@
+# PE-Versionsressource fuer den Windows-Build (PyInstaller --version-file).
+#
+# Zweck: Das Binary bekommt einen erkennbaren Herausgeber und eine Produktidentitaet.
+# Ein unsigniertes Binary voellig ohne Metadaten ist fuer EDR-Heuristiken maximal
+# verdaechtig -- siehe CLAUDE.md, Abschnitt "SentinelOne False Positive".
+#
+# WICHTIG:
+#   - CompanyName muss mit dem Subject des spaeter verwendeten Code-Signing-
+#     Zertifikats uebereinstimmen. Weicht die juristische Firmierung ab
+#     (z. B. "Schneider Electric GmbH"), hier anpassen.
+#   - OriginalFilename muss dem tatsaechlichen Dateinamen entsprechen. Eine
+#     Abweichung ist selbst ein Verdachtsmoment. Aktuell haengt der Name an
+#     --name PanelServerPasswordGenerator in .github/workflows/build.yml.
+#   - Bei jedem Release filevers/prodvers und die Versionsstrings mitziehen.
+
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 0, 0, 0),
+    prodvers=(1, 0, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        '040704b0',
+        [StringStruct('CompanyName', 'Schneider Electric'),
+         StringStruct('FileDescription', 'IoT-DACH PanelServer Password Generator'),
+         StringStruct('FileVersion', '1.0.0.0'),
+         StringStruct('InternalName', 'PanelServerPasswordGenerator'),
+         StringStruct('LegalCopyright', 'Copyright (C) Schneider Electric'),
+         StringStruct('OriginalFilename', 'PanelServerPasswordGenerator.exe'),
+         StringStruct('ProductName', 'IoT-DACH PanelServer Password Generator'),
+         StringStruct('ProductVersion', '1.0.0.0'),
+         StringStruct('Comments',
+                      'Internes Werkzeug zur deterministischen Ableitung von '
+                      'Geraetepasswoertern fuer EcoStruxure Panel Server.')]
+      )
+    ]),
+    VarFileInfo([VarStruct('Translation', [0x0407, 1200])])
+  ]
+)

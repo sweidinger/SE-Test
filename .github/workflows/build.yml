@@ -7,21 +7,31 @@ on:
     branches: [ main, master ]
   workflow_dispatch:  # Allows manual triggering
 
+env:
+  APP_NAME: PanelServerPasswordGenerator
+  ENTRY: IoT-DACH-PasswordGenerator/src/passwort_generator_gui_mit_settings.py
+  ICON: IoT-DACH-PasswordGenerator/assets/SE-Icon.ico
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # --onedir statt --onefile: onefile entpackt bei jedem Start eine komplette
+        # Python-Runtime nach %TEMP% und fuehrt sie von dort aus. Das ist der
+        # Verhaltens-Trigger, an dem SentinelOne haengenbleibt.
+        # --noupx: Packer sind ein starker Heuristik-Trigger.
+        # --version-file: gibt dem Binary einen erkennbaren Herausgeber (nur Windows).
+        # Siehe IoT-DACH-PasswordGenerator/CLAUDE.md
         include:
           - os: windows-latest
-            output-name: passwort_generator_gui_mit_settings.exe
-            build-args: --onefile --windowed
+            build-args: >-
+              --onedir --windowed --noupx
+              --version-file=IoT-DACH-PasswordGenerator/assets/version_info.txt
           - os: macos-latest
-            output-name: passwort_generator_gui_mit_settings
-            build-args: --onefile --windowed
+            build-args: --onedir --windowed --noupx
           - os: ubuntu-latest
-            output-name: passwort_generator_gui_mit_settings
-            build-args: --onefile
+            build-args: --onedir --noupx
 
     steps:
     - uses: actions/checkout@v4
@@ -35,7 +45,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller pillow
-        pip install -r requirements.txt
+        pip install -r IoT-DACH-PasswordGenerator/requirements.txt
 
     - name: Install system dependencies (Linux)
       if: runner.os == 'Linux'
@@ -44,21 +54,56 @@ jobs:
         sudo apt-get install -y python3-tk
 
     - name: Build executable
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          pyinstaller ${{ matrix.build-args }} --icon=SE-Icon.ico passwort_generator_gui_mit_settings.py
-        else
-          # For macOS and Linux, Pillow will convert .ico to the appropriate format
-          pyinstaller ${{ matrix.build-args }} --icon=SE-Icon.ico passwort_generator_gui_mit_settings.py
-        fi
       shell: bash
+      run: |
+        # Pillow konvertiert die .ico auf macOS/Linux ins passende Format.
+        pyinstaller ${{ matrix.build-args }} \
+          --name "$APP_NAME" \
+          --icon="$ICON" \
+          "$ENTRY"
+
+    - name: Verify version resource (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $exe = "dist/$env:APP_NAME/$env:APP_NAME.exe"
+        $info = (Get-Item $exe).VersionInfo
+        Write-Host "CompanyName:      $($info.CompanyName)"
+        Write-Host "ProductName:      $($info.ProductName)"
+        Write-Host "OriginalFilename: $($info.OriginalFilename)"
+        Write-Host "FileVersion:      $($info.FileVersion)"
+        if (-not $info.CompanyName) {
+          Write-Error "Versionsressource fehlt im Binary - --version-file hat nicht gegriffen."
+          exit 1
+        }
+        # OriginalFilename muss dem echten Dateinamen entsprechen, sonst ist die
+        # Abweichung selbst ein Verdachtsmoment.
+        if ($info.OriginalFilename -ne "$env:APP_NAME.exe") {
+          Write-Error "OriginalFilename '$($info.OriginalFilename)' passt nicht zu '$env:APP_NAME.exe'."
+          exit 1
+        }
+
+    - name: Package (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        Compress-Archive -Path "dist/$env:APP_NAME" `
+                         -DestinationPath "dist/$env:APP_NAME-windows.zip"
+
+    - name: Package (macOS/Linux)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        OS_TAG=$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')
+        cd dist
+        zip -rq "$APP_NAME-$OS_TAG.zip" "$APP_NAME"*
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-executable
         path: |
-          dist/
+          dist/*.zip
         retention-days: 30
 
     - name: Create Release (on tag)
@@ -66,6 +111,6 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          dist/*
+          dist/*.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
