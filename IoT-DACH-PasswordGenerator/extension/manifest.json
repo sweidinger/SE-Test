@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "IoT-DACH PanelServer Password Generator",
   "version": "1.0.0",
-  "description": "Leitet deterministisch Gerätepasswörter für EcoStruxure Panel Server aus Seriennummer, ETP-ID und Master-Passwort ab. Internes Werkzeug von Schneider Electric.",
+  "description": "Leitet Gerätepasswörter für EcoStruxure Panel Server aus Seriennummer, ETP-ID und Master-Passwort ab. Schneider-Electric-Tool.",
   "action": {
     "default_popup": "popup.html",
     "default_title": "IoT-DACH PanelServer Password Generator"
