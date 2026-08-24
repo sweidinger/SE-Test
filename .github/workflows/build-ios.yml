@@ -48,12 +48,12 @@ jobs:
 
     - name: Show available destinations
       run: |
-        cd iOS
+        cd IoT-DACH-PasswordGenerator/ios
         xcodebuild -project PasswordGeneratorApp.xcodeproj -scheme PasswordGeneratorApp -showdestinations
 
     - name: Build for iOS Simulator
       run: |
-        cd iOS
+        cd IoT-DACH-PasswordGenerator/ios
         xcodebuild clean build \
           -project PasswordGeneratorApp.xcodeproj \
           -scheme PasswordGeneratorApp \
@@ -63,24 +63,24 @@ jobs:
     - name: Archive for TestFlight (with signing)
       if: ${{ secrets.DISTRIBUTION_CERTIFICATE != '' }}
       run: |
-        cd iOS
+        cd IoT-DACH-PasswordGenerator/ios
         xcodebuild clean archive \
           -project PasswordGeneratorApp.xcodeproj \
           -scheme PasswordGeneratorApp \
           -destination "generic/platform=iOS" \
           -configuration Release \
-          -archivePath ../build/PasswordGeneratorApp.xcarchive
+          -archivePath "$GITHUB_WORKSPACE/build/PasswordGeneratorApp.xcarchive"
 
     - name: Archive for Device (without signing)
       if: ${{ secrets.DISTRIBUTION_CERTIFICATE == '' }}
       run: |
-        cd iOS
+        cd IoT-DACH-PasswordGenerator/ios
         xcodebuild clean archive \
           -project PasswordGeneratorApp.xcodeproj \
           -scheme PasswordGeneratorApp \
           -destination "generic/platform=iOS" \
           -configuration Release \
-          -archivePath ../build/PasswordGeneratorApp.xcarchive \
+          -archivePath "$GITHUB_WORKSPACE/build/PasswordGeneratorApp.xcarchive" \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO
@@ -109,12 +109,12 @@ jobs:
     - name: Export IPA for TestFlight
       if: ${{ secrets.DISTRIBUTION_CERTIFICATE != '' }}
       run: |
-        cd iOS
-        if [ -d "../build/PasswordGeneratorApp.xcarchive" ]; then
+        cd IoT-DACH-PasswordGenerator/ios
+        if [ -d ""$GITHUB_WORKSPACE/build/PasswordGeneratorApp.xcarchive"" ]; then
           xcodebuild -exportArchive \
-            -archivePath ../build/PasswordGeneratorApp.xcarchive \
-            -exportOptionsPlist ../exportOptionsTestFlight.plist \
-            -exportPath ../build/export
+            -archivePath "$GITHUB_WORKSPACE/build/PasswordGeneratorApp.xcarchive" \
+            -exportOptionsPlist "$GITHUB_WORKSPACE/exportOptionsTestFlight.plist" \
+            -exportPath "$GITHUB_WORKSPACE/build/export"
         else
           echo "Archive step failed, skipping IPA creation"
         fi
@@ -122,12 +122,12 @@ jobs:
     - name: Create IPA (development - fallback)
       if: ${{ secrets.DISTRIBUTION_CERTIFICATE == '' }}
       run: |
-        cd iOS
-        if [ -d "../build/PasswordGeneratorApp.xcarchive" ]; then
+        cd IoT-DACH-PasswordGenerator/ios
+        if [ -d ""$GITHUB_WORKSPACE/build/PasswordGeneratorApp.xcarchive"" ]; then
           xcodebuild -exportArchive \
-            -archivePath ../build/PasswordGeneratorApp.xcarchive \
+            -archivePath "$GITHUB_WORKSPACE/build/PasswordGeneratorApp.xcarchive" \
             -exportOptionsPlist exportOptions.plist \
-            -exportPath ../build/export
+            -exportPath "$GITHUB_WORKSPACE/build/export"
         else
           echo "Archive step failed, skipping IPA creation"
         fi

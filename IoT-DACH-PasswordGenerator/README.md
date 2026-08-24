@@ -25,10 +25,12 @@ After a successful build:
 
 1. Go to the "Actions" tab in your GitHub repository
 2. Click on the latest workflow run
-3. Download the artifacts:
-   - `Windows-executable` - Contains the Windows .exe file
-   - `macOS-executable` - Contains the macOS executable
-   - `Linux-executable` - Contains the Linux executable
+3. Download the artifacts (each contains a ZIP of the application folder):
+   - `Windows-executable` - `PanelServerPasswordGenerator-windows.zip`
+   - `macOS-executable` - `PanelServerPasswordGenerator-macos.zip`
+   - `Linux-executable` - `PanelServerPasswordGenerator-linux.zip`
+
+Unpack the ZIP and keep the folder together — the `.exe` needs the files next to it.
 
 ### Local Development
 
@@ -36,15 +38,27 @@ To run the application locally:
 
 ```bash
 pip install -r requirements.txt
-python passwort_generator_gui_mit_settings.py
+python src/passwort_generator_gui_mit_settings.py
 ```
 
 To build locally using PyInstaller:
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed passwort_generator_gui_mit_settings.py
+pyinstaller --onedir --windowed --noupx \
+  --name PanelServerPasswordGenerator \
+  --icon=assets/SE-Icon.ico \
+  --version-file=assets/version_info.txt \
+  src/passwort_generator_gui_mit_settings.py
 ```
+
+This produces a **folder** `dist/PanelServerPasswordGenerator/` — ship the whole
+folder (the CI packages it as a ZIP), not just the `.exe`.
+
+> **Note:** The build deliberately uses `--onedir` rather than `--onefile`.
+> `--onefile` unpacks a full Python runtime into `%TEMP%` on every start, which
+> SentinelOne flags as malware on company laptops. See
+> [CLAUDE.md](CLAUDE.md#sentinelone-false-positive) before changing the build flags.
 
 ## Dependencies
 

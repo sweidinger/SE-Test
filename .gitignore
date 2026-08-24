@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+
+# PyInstaller-Zwischenergebnisse lokaler Builds
+/build/
+IoT-DACH-PasswordGenerator/build/
+*.spec
+
+# GEHEIM: enthaelt Fernet-Key + verschluesseltes Master-Passwort
+settings.json
+
+# GEHEIM: Altbestand mit hartkodiertem Fernet-Key und Master-Passwort im Klartext.
+# War nie in Git und darf da auch nicht hin. Siehe CLAUDE.md, Abschnitt "Secrets".
+IoT-DACH-PasswordGenerator/legacy/
+
+# Signing-Material / Buildartefakte iOS
+*.xcarchive
+*.ipa
+*.p12
+*.mobileprovision
+AuthKey*.p8
