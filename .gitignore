@@ -23,3 +23,6 @@ IoT-DACH-PasswordGenerator/legacy/
 *.p12
 *.mobileprovision
 AuthKey*.p8
+
+# Gepackte Extension-Artefakte (werden von tools/package.sh erzeugt)
+IoT-DACH-PasswordGenerator/extension/dist/

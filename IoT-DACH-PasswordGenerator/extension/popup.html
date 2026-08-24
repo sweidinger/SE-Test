@@ -1,0 +1,124 @@
+<meta charset="utf-8">
+<title>IoT-DACH PanelServer Password Generator</title>
+<link rel="stylesheet" href="popup.css">
+
+<div class="app">
+  <header class="app-header">
+    <h1>PanelServer Password Generator</h1>
+  </header>
+
+  <!-- Zustand 1: Ersteinrichtung -->
+  <section id="view-setup" class="view" hidden>
+    <p class="hint">Noch kein Tresor eingerichtet. Lege ein Master-Passwort und eine
+      Passphrase zum Entsperren fest.</p>
+
+    <form id="form-setup" novalidate>
+      <label for="setup-master">Master-Passwort</label>
+      <input type="password" id="setup-master" autocomplete="new-password" required>
+
+      <label for="setup-passphrase">Passphrase</label>
+      <input type="password" id="setup-passphrase" autocomplete="new-password" required>
+
+      <label for="setup-passphrase-confirm">Passphrase bestätigen</label>
+      <input type="password" id="setup-passphrase-confirm" autocomplete="new-password" required>
+
+      <p id="setup-error" class="error" role="alert" hidden></p>
+
+      <button type="submit" class="primary">Tresor einrichten</button>
+    </form>
+  </section>
+
+  <!-- Zustand 2: Gesperrt -->
+  <section id="view-locked" class="view" hidden>
+    <p class="hint">Der Tresor ist gesperrt. Gib deine Passphrase ein, um fortzufahren.</p>
+
+    <form id="form-unlock" novalidate>
+      <label for="unlock-passphrase">Passphrase</label>
+      <input type="password" id="unlock-passphrase" autocomplete="current-password" required>
+
+      <p id="unlock-error" class="error" role="alert" hidden></p>
+
+      <button type="submit" class="primary">Entsperren</button>
+    </form>
+  </section>
+
+  <!-- Zustand 3: Entsperrt -->
+  <section id="view-unlocked" class="view" hidden>
+    <form id="form-generate" novalidate>
+      <label for="gen-serial">Seriennummer</label>
+      <input type="text" id="gen-serial" autocomplete="off" required>
+
+      <label for="gen-etp">ETP Identification</label>
+      <input type="text" id="gen-etp" autocomplete="off" required>
+
+      <p id="generate-error" class="error" role="alert" hidden></p>
+
+      <button type="submit" class="primary">Passwort generieren</button>
+    </form>
+
+    <div class="result-block">
+      <label for="gen-result">Generiertes Passwort</label>
+      <input type="text" id="gen-result" readonly placeholder="—">
+      <div class="result-actions">
+        <button type="button" id="btn-copy" class="secondary" disabled>In Zwischenablage kopieren</button>
+      </div>
+      <p id="copy-status" class="status" role="status" aria-live="polite"></p>
+    </div>
+
+    <hr>
+
+    <button type="button" id="btn-lock" class="secondary">Sperren</button>
+
+    <details class="settings">
+      <summary>Einstellungen</summary>
+
+      <form id="form-change-passphrase" novalidate>
+        <h2>Passphrase ändern</h2>
+        <label for="change-old">Aktuelle Passphrase</label>
+        <input type="password" id="change-old" autocomplete="current-password" required>
+
+        <label for="change-new">Neue Passphrase</label>
+        <input type="password" id="change-new" autocomplete="new-password" required>
+
+        <p id="change-error" class="error" role="alert" hidden></p>
+        <p id="change-status" class="status" role="status" aria-live="polite"></p>
+
+        <button type="submit" class="secondary">Passphrase ändern</button>
+      </form>
+    </details>
+  </section>
+
+  <!-- Zurücksetzen: eigener, geteilter Bereich -- erreichbar sowohl gesperrt als
+       auch entsperrt, damit eine vergessene Passphrase nicht in eine Sackgasse
+       fuehrt. Nicht sichtbar vor der Ersteinrichtung (es gibt noch nichts, das
+       zurueckgesetzt werden koennte). -->
+  <section id="view-reset" class="view" hidden>
+    <details class="settings">
+      <summary>Zurücksetzen</summary>
+
+      <div class="danger-zone">
+        <p class="hint">Löscht das hinterlegte Master-Passwort und die Passphrase
+          unwiderruflich aus diesem Browser. <strong>Nach dem Zurücksetzen muss das
+          Master-Passwort neu eingegeben werden</strong> — wer es nicht mehr kennt,
+          verliert damit den Zugang zu diesem Tool und kann keine bereits vergebenen
+          Gerätepasswörter mehr nachbilden. Dieser Schritt lässt sich nicht rückgängig
+          machen.</p>
+
+        <button type="button" id="btn-reset" class="danger">Tresor zurücksetzen</button>
+
+        <div id="reset-confirm" class="confirm-box" hidden>
+          <p>Wirklich zurücksetzen? Das Master-Passwort wird endgültig gelöscht und
+            muss danach neu eingegeben werden. Ohne das Master-Passwort sind bereits
+            vergebene Gerätepasswörter nicht mehr nachbildbar. Diese Aktion kann
+            nicht rückgängig gemacht werden.</p>
+          <button type="button" id="btn-reset-confirm" class="danger">Ja, zurücksetzen</button>
+          <button type="button" id="btn-reset-cancel" class="secondary">Abbrechen</button>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <p id="global-error" class="error" role="alert" hidden></p>
+</div>
+
+<script type="module" src="popup.js"></script>

@@ -25,6 +25,7 @@ IoT-DACH-PasswordGenerator/
 │   └── version_info.txt                         PE-Versionsressource für den Windows-Build
 ├── dist/windows/                                gebaute EXEn (eingecheckt)
 ├── dist/macos/                                  gebauter macOS-Build
+├── extension/                                   Chrome-Erweiterung (MV3) — s. u.
 ├── ios/                                         SwiftUI-App + TestFlight-Setup
 ├── scripts/setup-testflight.sh                  interaktiver TestFlight-Helfer
 ├── legacy/SE-PWD-GEN/                           Vorgängerversionen, NICHT verwenden (s.u.)
@@ -66,6 +67,71 @@ einzelne EXE.
 > schlägt dann fehl. Richtig wäre `%LOCALAPPDATA%\PanelServerPasswordGenerator\
 > settings.json`. Das ist zu ändern, *bevor* auf eine Installation nach Program
 > Files umgestellt wird.
+
+## Chrome-Erweiterung (`extension/`)
+
+Manifest V3, vollständig offline, einzige Berechtigung `storage`. Sie ist der
+geplante Ersatz für die Windows-EXE: Es gibt kein PE-Binary mehr, damit entfällt
+das SentinelOne-Problem an der Wurzel statt es zu entschärfen. Zwangsinstalliert
+per Richtlinie kann sie zudem nicht mehr von den Geräten verschwinden.
+
+```
+extension/
+├── manifest.json
+├── popup.html / popup.css / popup.js    Oberfläche (deutschsprachig)
+├── lib/pyrandom.js                      CPython-Mersenne-Twister, bit-genau
+├── lib/derive.js                        Ableitung, äquivalent zum Python-Original
+├── lib/vault.js                         Master-Passwort: PBKDF2 + AES-256-GCM
+├── test/vectors.json                    3005 Referenzvektoren aus dem Original
+├── test/run-tests.mjs                   Regressionsgatter der Ableitung
+└── test/vault-tests.mjs                 Tests des Tresors
+```
+
+Tests (brauchen nur Node, keine Abhängigkeiten):
+
+```bash
+cd extension
+node test/run-tests.mjs      # Ableitung gegen die Referenzvektoren
+node test/vault-tests.mjs    # Tresor
+```
+
+### Der Kompatibilitätsvertrag
+
+`lib/derive.js` und `lib/pyrandom.js` sind **kein Neuentwurf, sondern eine
+Nachbildung**. Die Ableitung hängt an CPythons Mersenne Twister — `random.seed()`,
+`randint()`, `choice()`. Ein naiver JS-Nachbau erzeugt andere Passwörter, und
+damit wären alle im Feld stehenden Geräte unerreichbar.
+
+`test/vectors.json` enthält 3005 mit der Originalfunktion erzeugte Vektoren
+(inklusive aller drei Fallback-Zweige, Unicode, Leerstrings, verschiedene
+Längen). **Schlägt `run-tests.mjs` fehl, ist niemals der Test das Problem.**
+
+Neue Vektoren: `python3 tools/gen_vectors.py 3000 test/vectors.json`
+
+Verifiziert wurde außerdem, dass `_randbelow`/`randrange`/`choice` zwischen
+CPython 3.9 (Zielversion der EXE) und 3.14 identisch sind — lokal erzeugte
+Vektoren gelten also auch für die ausgelieferte Python-Version.
+
+### Sicherheitsmodell des Tresors
+
+Das Master-Passwort liegt AES-256-GCM-verschlüsselt in `chrome.storage.local`;
+der Schlüssel wird per PBKDF2-SHA-256 (600.000 Iterationen, ~50 ms) aus einer
+Passphrase abgeleitet, die nirgends gespeichert wird. Das entsperrte Passwort
+liegt ausschließlich in `chrome.storage.session` — reiner Speicher, nie auf
+Platte, weg beim Browser-Neustart.
+
+Das schützt gegen das Auslesen der Profildateien. Es schützt **nicht** gegen
+Schadsoftware im laufenden Browser oder einen Keylogger. Es ist damit deutlich
+besser als das Vorgängerverfahren, wo Fernet-Key und Token gemeinsam in einer
+Klartextdatei lagen — der Schlüssel lag neben dem Schloss.
+
+> ⚠️ **Offen vor dem Produktivgang:** ein Abgleich gegen ein real ausgerolltes
+> Gerätepasswort. Die Vektoren beweisen, dass JS und Python identisch rechnen —
+> nicht, dass in der Praxis dasselbe Master-Passwort verwendet wurde.
+
+> ⚠️ **Zwei Implementierungen derselben Krypto driften auseinander.** Entweder
+> die Extension wird die einzige Quelle und die EXE wird stillgelegt, oder beide
+> bekommen die Vektoren als CI-Gate. „Einfach beide pflegen" ist keine Option.
 
 ## Ableitungslogik — nicht unbedacht ändern
 

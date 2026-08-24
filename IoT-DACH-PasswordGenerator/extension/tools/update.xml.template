@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+  update.xml — Chrome-Update-Manifest fürs Self-Hosting (Force-Install per
+  Unternehmensrichtlinie, ohne Chrome Web Store).
+
+  Trag die drei Platzhalter unten ein und hoste die fertige Datei auf einem
+  internen HTTPS-Server. Details siehe DEPLOYMENT.md.
+
+    __EXTENSION_ID__   Die 32-stellige Extension-ID (a-p), die Chrome beim
+                        Packen der .crx aus dem Public Key des .pem-Schlüssels
+                        ableitet. Bleibt stabil, solange derselbe .pem-
+                        Schlüssel wiederverwendet wird.
+
+    __VERSION__         Versionsnummer, die exakt zu "version" in der
+                        gepackten manifest.json passt (z. B. 1.0.0). Chrome
+                        vergleicht diesen Wert mit der lokal installierten
+                        Version, um ein Update auszulösen.
+
+    __CRX_URL__         Vollständige HTTPS-URL zur .crx-Datei auf demselben
+                        oder einem erreichbaren internen Server (z. B.
+                        https://intern.example.com/extensions/panelserver-pwgen.crx).
+                        Der Server muss .crx mit dem MIME-Type
+                        application/x-chrome-extension ausliefern.
+
+  In der Firmenrichtlinie (ExtensionInstallForcelist / ExtensionSettings)
+  zeigt "update_url" auf DIESE Datei, NICHT auf die .crx direkt.
+-->
+<gupdate xmlns='http://www.google.com/update2/response' protocol='2.0'>
+  <app appid='__EXTENSION_ID__'>
+    <updatecheck codebase='__CRX_URL__' version='__VERSION__' />
+  </app>
+</gupdate>
