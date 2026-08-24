@@ -26,3 +26,8 @@ AuthKey*.p8
 
 # Gepackte Extension-Artefakte (werden von tools/package.sh erzeugt)
 IoT-DACH-PasswordGenerator/extension/dist/
+
+# Signaturschluessel der Chrome-Extension: NIEMALS einchecken.
+# Verlust bedeutet neue Extension-ID und damit greift die Rollout-Richtlinie nicht mehr.
+*.pem
+*.crx
