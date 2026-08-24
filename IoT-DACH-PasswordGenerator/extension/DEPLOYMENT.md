@@ -5,6 +5,41 @@ Testen, Self-Hosting mit erzwungener Installation (Force-Install) über
 Firmenrichtlinien, und alternativ der Chrome Web Store als „unlisted"
 Eintrag.
 
+> **Entscheidung für dieses Projekt: kein Store-Eintrag.** Die Extension wird
+> ausschließlich intern bereitgestellt — Abschnitt 2. Abschnitt 3 (Web Store)
+> ist damit nur noch zur Einordnung dokumentiert.
+
+## 0. Warum es keine „manuelle Installation" gibt
+
+Der naheliegende Wunsch — CRX-Datei per Mail oder Dateifreigabe verteilen, der
+Benutzer doppelklickt sie — funktioniert in Chrome **nicht mehr**. Das ist kein
+Konfigurationsproblem, sondern seit Chrome 33 bewusst zugenagelt:
+
+- **Drag & Drop einer `.crx` auf `chrome://extensions` wird blockiert.** Chrome
+  meldet sinngemäß, Erweiterungen ließen sich nur aus dem Web Store hinzufügen.
+- **Der Registry-Weg über einen lokalen Dateipfad ist abgeschafft.** Der frühere
+  `path`-Schlüssel für externe Installationen erlaubt keine lokale `.crx` mehr;
+  das verbliebene `update_url`-Verfahren dieser Methode akzeptiert nur Googles
+  eigene Store-URL.
+- **Entpackte Erweiterungen** (Entwicklermodus) lassen sich zwar laden, sind
+  aber für den Dauerbetrieb ungeeignet: Chrome blendet eine wiederkehrende
+  Warnung zum Entwicklermodus ein, es gibt keine automatischen Updates, der
+  Code liegt für jeden Benutzer veränderbar im Klartext auf der Platte, und in
+  vielen verwalteten Umgebungen ist der Entwicklermodus per Richtlinie gesperrt.
+
+**Was bleibt — und dem Wunsch am nächsten kommt:** die Bereitstellung per
+Gruppenrichtlinie von einem **internen** Server. Die Installation über
+Richtlinien funktioniert ausdrücklich unabhängig davon, wo die Extension liegt.
+Es geht also nichts an Google, kein Review, kein Store-Eintrag, der Code bleibt
+vollständig im Haus — nur der Auslöser ist eine Richtlinie statt eines
+Doppelklicks.
+
+> ⚠️ **Voraussetzung:** Eine nicht aus dem Web Store stammende Extension, die
+> per Richtlinie installiert wird, wird auf einem Gerät, das **nicht** in der
+> Domäne bzw. nicht per Chrome Browser Cloud Management verwaltet ist, von
+> Chrome **hart deaktiviert**. Für verwaltete Firmenlaptops ist das erfüllt,
+> für Privatgeräte nicht.
+
 ## 1. Lokal testen (unpacked)
 
 1. `chrome://extensions` öffnen.
@@ -192,6 +227,8 @@ Extension. Es gehört nicht in eine E-Mail und nicht in ein Ticket.
 
 ## Quellen
 
+- [Use alternative installation methods | Chrome for Developers](https://developer.chrome.com/docs/extensions/how-to/distribute/install-extensions) — externe Installationsverfahren, Registry-Schlüssel, Einschränkungen des `update_url`-Feldes.
+- [Extensions Deployment FAQ | Chromium](https://www.chromium.org/developers/extensions-deployment-faq/) — seit Chrome 33 keine externen Installationen aus einem lokalen `.crx`-Pfad; per Richtlinie installierte Nicht-Store-Extensions werden auf nicht domänengebundenen Geräten hart deaktiviert, während die Richtlinien-Installation für Unternehmen unabhängig vom Hosting-Ort unterstützt bleibt.
 - [Self-host for Linux | Chrome Extensions | Chrome for Developers](https://developer.chrome.com/docs/extensions/how-to/distribute/host-on-linux) — Update-Manifest-XML-Format, `.crx`-Packen, MIME-Type-Anforderungen (`application/x-chrome-extension`, `nosniff`-Falle).
 - [ExtensionInstallForcelist: Configure the list of force-installed apps and extensions | Chrome Enterprise](https://chromeenterprise.google/policies/extension-install-forcelist/) — Format `extension_id;update_url`, Hinweis dass die URL nur zur Erstinstallation verwendet wird.
 - [ExtensionSettings: Extension management settings | Chrome Enterprise](https://chromeenterprise.google/policies/extension-settings/) — `installation_mode: force_installed`, `update_url`-Feld, Verhältnis zu `ExtensionInstallForcelist`.
