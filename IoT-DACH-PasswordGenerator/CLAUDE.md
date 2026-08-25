@@ -8,9 +8,18 @@ ohne es irgendwo speichern zu müssen.
 
 ## Aktuelle Aufgabe
 
-**SentinelOne stuft die Windows-EXE wiederholt als Schadsoftware ein und löscht sie auf
-den Firmenlaptops.** Das ist ein False Positive; der Build soll so umgestellt werden,
-dass er nicht mehr anschlägt. Details und Lösungsweg: siehe [SentinelOne](#sentinelone-false-positive).
+**Ausgangsproblem:** SentinelOne stuft die Windows-EXE wiederholt als Schadsoftware ein
+und löscht sie auf den Firmenlaptops (False Positive). Zwei Stränge verfolgt:
+
+1. **EXE gehärtet** (`--onedir` + Metadaten) — entschärft, aber nicht die Wurzel.
+   Details: siehe [SentinelOne](#sentinelone-false-positive).
+2. **Chrome-Erweiterung als Ersatz** (`extension/`) — löst es an der Wurzel, weil es
+   kein PE-Binary mehr gibt. **Das ist der eingeschlagene Weg.** Stand: siehe
+   [Chrome Web Store](#chrome-web-store-veröffentlichung).
+
+**Aktueller Fokus:** Die Extension wird als **öffentlicher** Eintrag im Chrome Web
+Store veröffentlicht (Entscheidung des Nutzers, trotz des Hinweises unten zur
+Offenlegung des Algorithmus). Listing ist in Arbeit.
 
 ## Struktur
 
@@ -82,18 +91,32 @@ extension/
 ├── lib/pyrandom.js                      CPython-Mersenne-Twister, bit-genau
 ├── lib/derive.js                        Ableitung, äquivalent zum Python-Original
 ├── lib/vault.js                         Master-Passwort: PBKDF2 + AES-256-GCM
+├── manifest.json                        MV3, nur Berechtigung "storage"
+├── icons/icon-{16,32,48,128}.png        neutrales Schlüsselloch-Icon (KEINE Fremdmarke)
 ├── test/vectors.json                    3005 Referenzvektoren aus dem Original
 ├── test/run-tests.mjs                   Regressionsgatter der Ableitung
-└── test/vault-tests.mjs                 Tests des Tresors
+├── test/vault-tests.mjs                 Tests des Tresors
+├── test/popup-tests.mjs                 Popup-Logik gegen DOM-Ersatz (22 Fälle)
+├── tools/gen_vectors.py                 erzeugt vectors.json aus der Originalfunktion
+├── tools/package.sh                     baut dist/panelserver-pwgen-<version>.zip
+├── tools/update.xml.template            Update-Manifest für Self-Hosting (ungenutzt, s.u.)
+└── DEPLOYMENT.md                        Verteilwege (Store/Self-Hosting/OU-Zuweisung)
 ```
 
 Tests (brauchen nur Node, keine Abhängigkeiten):
 
 ```bash
 cd extension
-node test/run-tests.mjs      # Ableitung gegen die Referenzvektoren
-node test/vault-tests.mjs    # Tresor
+node test/run-tests.mjs      # Ableitung gegen die Referenzvektoren (3005/3005)
+node test/vault-tests.mjs    # Tresor (9/9)
+node test/popup-tests.mjs    # Popup-Ablauf: Einrichtung/Entsperren/Erzeugen/Sperren/Reset (22/22)
 ```
+
+Das **Icon** wurde bewusst neu erzeugt (`tools/`-Skript im Scratchpad war einmalig):
+ein neutrales weißes Schlüsselloch auf dunkelblauem Grund. Das offizielle
+Schneider-Electric-Logo wird **nicht** verwendet — Markenschutz, zumal der öffentliche
+Store-Eintrag unter einem privaten Konto läuft. Quelle `assets/SE-Icon.ico` enthält nur
+32×32; für ein scharfes 128er wäre eine hochauflösende Grafik nötig.
 
 ### Der Kompatibilitätsvertrag
 
@@ -133,6 +156,69 @@ Klartextdatei lagen — der Schlüssel lag neben dem Schloss.
 > die Extension wird die einzige Quelle und die EXE wird stillgelegt, oder beide
 > bekommen die Vektoren als CI-Gate. „Einfach beide pflegen" ist keine Option.
 
+### Feld-Zuordnung EXE ↔ Extension (Stolperfalle)
+
+Die Einstellungsfelder heißen unterschiedlich und bedeuten **nicht** dasselbe. In die
+Ableitung geht in beiden Versionen nur der **Klartext des Master-Passworts** ein.
+
+| EXE (`settings.json`) | Extension | Bedeutung |
+|---|---|---|
+| `fernet_key` + `encrypted_master` | — | zusammen ergeben sie den Klartext (`Fernet.decrypt`) |
+| (Ergebnis der Entschlüsselung) | **Master-Passwort** | **direkt** der Klartext, der in die Ableitung geht |
+| — | **Passphrase** | NEU, nur lokaler Tresorschutz (PBKDF2). Beeinflusst die erzeugten Passwörter **nicht**, frei wählbar. |
+
+Für passwortkompatiblen Umstieg gilt: In das Extension-Feld „Master-Passwort" gehört der
+**entschlüsselte** Wert aus `settings.json`, **nicht** der Fernet-Key und nicht der Token.
+
+Den Klartext gewinnt man aus `settings.json`:
+
+```python
+from cryptography.fernet import Fernet; import json
+d = json.load(open("settings.json"))
+print(Fernet(d["fernet_key"].encode()).decrypt(d["encrypted_master"].encode()).decode())
+```
+
+> Der Klartextwert steht **bewusst nicht in dieser Datei** — CLAUDE.md ist im Git.
+> Verifiziert (Test SN-TESTGERAET-01): EXE-Logik und Extension liefern mit demselben
+> Klartext-Master dasselbe Gerätepasswort. Damit ist der Umstieg passwortkompatibel.
+
+## Chrome Web Store — Veröffentlichung
+
+**Sichtbarkeit: öffentlich** (Nutzerentscheidung). Publisher ist derzeit ein
+**privates** Google-Konto (`sweidinger03…@gmail.com`), nicht ein Firmenkonto.
+
+- **Store-Item-ID:** `mjilpihhhiidgbjkjojaalnmgiabgmip` — von Google beim ZIP-Upload
+  vergeben. Das ist die maßgebliche ID (für spätere Force-Install/Allowlist).
+- Die lokal per `chrome --pack-extension` erzeugte CRX hatte eine **andere** ID
+  (`jhpbeibpkhpmfdpnjkjnlilnhgkfjjab`). Für den Store-Weg **irrelevant** — die dabei
+  entstandene `.pem` wird nicht gebraucht (Google signiert selbst).
+- **Datenschutz-URL** (Pflicht): öffentlicher Gist,
+  `https://gist.github.com/sweidinger/1768d98e330a9d03432fb950d5aff6d8`
+- **Screenshots:** `Screenshots/store/store_{1,2,3}.png` — auf 1280×800, 24-Bit-PNG
+  ohne Alpha gebracht (Store-Vorgabe). Originale liegen in `Screenshots/`.
+- **Listing-Pflichtangaben** (remote code = **Nein**, `storage`-Begründung,
+  Beschreibungstexte, Kategorie „Workflow-Planung", Sprache Deutsch) wurden im Chat
+  geliefert; Manifest-`description` musste auf ≤132 Zeichen gekürzt werden.
+
+> ⚠️ **EU-DSA-Trader-Pflicht:** Ein öffentlicher Eintrag verlangt Trader-Angaben
+> (Firmenname, Adresse, Telefon), die **öffentlich am Listing** erscheinen. Am
+> privaten Konto hingen sie an einer Privatperson. Vor endgültigem Einreichen mit dem
+> Haus klären → besser Firmenkonto.
+
+> ⚠️ **Verteilung ist keine Zugriffskontrolle.** Ohne das Master-Passwort erzeugt die
+> Extension nichts. Der sicherheitskritische Schritt ist die Weitergabe des
+> Master-Passworts an den berechtigten Personenkreis — nicht der Store-Eintrag.
+> Details/Verteilwege: `extension/DEPLOYMENT.md`.
+
+### 🔴 Rotation vor dem Öffentlich-Gehen (offen, wichtig)
+
+Mit dem öffentlichen Eintrag wird der **Ableitungscode weltweit lesbar**. Danach hängt
+die Sicherheit *aller* Geräte nur noch am Master-Passwort. Wer ein einziges
+Gerätepasswort kennt (Seriennummer/ETP-ID stehen oft am Gerät), kann es offline
+zurückrechnen und jedes andere ableiten. **Empfehlung: Master-Passwort vor der
+Veröffentlichung rotieren** und auf allen Geräten neu ausrollen. Entscheidung liegt
+bei der Security des Hauses.
+
 ## Ableitungslogik — nicht unbedacht ändern
 
 ```
@@ -160,6 +246,14 @@ Bekannte Schwächen der Konstruktion, für später:
 Die aktuelle Version hält **keine** Geheimnisse im Code. Fernet-Key und verschlüsseltes
 Master-Passwort stehen zur Laufzeit in `settings.json` neben der EXE — diese Datei ist
 in `.gitignore` und darf nicht eingecheckt werden.
+
+Eine echte `settings.json` liegt lokal unter `IoT-DACH-PasswordGenerator/settings.json`
+(gitignored, nicht gepusht — geprüft). Sie enthält den produktiven Fernet-Key und das
+verschlüsselte Master-Passwort. Der Klartext daraus = das Extension-Feld
+„Master-Passwort" (siehe [Feld-Zuordnung](#feld-zuordnung-exe--extension-stolperfalle)).
+
+Zusätzlich gitignored: `*.pem`, `*.crx` (Signaturmaterial) und
+`extension/dist/` (gepackte Artefakte).
 
 > ⚠️ **`legacy/SE-PWD-GEN/Neuer Ordner/` enthält kompromittiertes Material:**
 > `key.py` enthält das Master-Passwort im Klartext (`03_Schneider_IOT!`), `PWDGEN.py`
