@@ -1,0 +1,59 @@
+name: JS-Checks (Extension + Web)
+
+# Gate fuer die JavaScript-Ableitung. Die Ableitungslogik ist ein
+# Kompatibilitaetsvertrag: dieselbe Eingabe muss ueberall dasselbe
+# Geraetepasswort ergeben, sonst sind ausgerollte Geraete unerreichbar.
+# Extension und Web-Version teilen sich diese Logik (extension/lib/*); dieser
+# Workflow haelt beide gegen die Referenzvektoren gruen und stellt sicher, dass
+# die generierte web/index.html nicht hinter dem lib/-Stand zurueckbleibt.
+# Siehe IoT-DACH-PasswordGenerator/CLAUDE.md und web/README.md.
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: IoT-DACH-PasswordGenerator
+
+jobs:
+  js-checks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    # --- Extension: Ableitung, Tresor, Popup-Ablauf ---
+    - name: Extension - Ableitung gegen Referenzvektoren (3005)
+      run: node test/run-tests.mjs
+      working-directory: IoT-DACH-PasswordGenerator/extension
+
+    - name: Extension - Tresor
+      run: node test/vault-tests.mjs
+      working-directory: IoT-DACH-PasswordGenerator/extension
+
+    - name: Extension - Popup-Ablauf
+      run: node test/popup-tests.mjs
+      working-directory: IoT-DACH-PasswordGenerator/extension
+
+    # --- Web: Build verifiziert selbst gegen dieselben Vektoren ---
+    - name: Web - Build + Vektoren-Verifikation
+      run: node web/build.mjs
+
+    # Der Build schreibt web/index.html neu. Weicht das Ergebnis vom
+    # eingecheckten Stand ab, wurde extension/lib/* geaendert, ohne die
+    # Web-Version neu zu generieren -> Drift. Hart fehlschlagen lassen.
+    - name: Web - Kein Drift zwischen lib/ und index.html
+      run: |
+        if ! git diff --quiet -- web/index.html; then
+          echo "::error::web/index.html ist nicht aktuell. Bitte 'node web/build.mjs' ausfuehren und das Ergebnis committen."
+          git --no-pager diff -- web/index.html
+          exit 1
+        fi

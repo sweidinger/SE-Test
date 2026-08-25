@@ -1,0 +1,1146 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IoT-DACH PanelServer Password Generator</title>
+<style>
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --text: #1a1d21;
+  --text-muted: #5b6270;
+  --border: #d5d9e0;
+  --accent: #2e7d32;
+  --accent-hover: #256628;
+  --accent-contrast: #ffffff;
+  --danger: #b3261e;
+  --danger-hover: #8f1e18;
+  --danger-bg: #fdecea;
+  --focus-ring: #1565c0;
+  --error-text: #b3261e;
+  --error-bg: #fdecea;
+  --status-text: #1b5e20;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1e22;
+    --surface: #26292e;
+    --text: #eceef1;
+    --text-muted: #a7adb8;
+    --border: #3a3e46;
+    --accent: #4caf50;
+    --accent-hover: #5fbf63;
+    --accent-contrast: #0c1a0d;
+    --danger: #e57373;
+    --danger-hover: #ef8f8f;
+    --danger-bg: #3a2323;
+    --focus-ring: #64b5f6;
+    --error-text: #ef9a9a;
+    --error-bg: #3a2323;
+    --status-text: #a5d6a7;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 380px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.app {
+  padding: 16px;
+}
+
+.app-header {
+  margin-bottom: 12px;
+}
+
+.app-header h1 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.view {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.hint {
+  color: var(--text-muted);
+  margin: 0 0 12px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  margin-top: 10px;
+}
+
+label:first-of-type {
+  margin-top: 0;
+}
+
+input[type="text"],
+input[type="password"] {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  width: 100%;
+}
+
+input[readonly] {
+  cursor: text;
+}
+
+input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 9px 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  margin-top: 14px;
+}
+
+button.primary:hover {
+  background: var(--accent-hover);
+}
+
+button.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+button.secondary:hover {
+  border-color: var(--accent);
+}
+
+button.danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+button.danger:hover {
+  background: var(--danger);
+  color: var(--accent-contrast);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: var(--error-text);
+  background: var(--error-bg);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+
+.status {
+  color: var(--status-text);
+  font-size: 12px;
+  min-height: 1.4em;
+  margin: 6px 0 0;
+}
+
+.result-block {
+  margin-top: 16px;
+}
+
+.result-actions {
+  margin-top: 8px;
+  display: flex;
+}
+
+.result-actions button {
+  flex: 1;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+
+#btn-lock {
+  width: 100%;
+}
+
+details.settings {
+  margin-top: 16px;
+}
+
+details.settings summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+details.settings summary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+details.settings h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin: 14px 0 6px;
+}
+
+.danger-zone {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* #view-reset ist ein eigener, geteilter Bereich (gesperrt wie entsperrt
+   erreichbar) und steht neben #view-locked bzw. #view-unlocked -- braucht
+   also Abstand nach oben. Die Zurücksetzen-Erklärung ist dort außerdem das
+   erste (und einzige) Element unter der Überschrift, nicht mehr durch das
+   Passphrase-ändern-Formular davon getrennt -- daher ohne die sonst übliche
+   Trennlinie darüber. */
+#view-reset {
+  margin-top: 12px;
+}
+
+#view-reset .danger-zone {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.danger-zone button.danger {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.confirm-box {
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+}
+
+.confirm-box p {
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.confirm-box button {
+  margin-right: 8px;
+}
+
+[hidden] {
+  display: none !important;
+}
+html { background: var(--bg); }
+body { margin: 0 auto; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <h1>PanelServer Password Generator</h1>
+  </header>
+
+  <!-- Zustand 1: Ersteinrichtung -->
+  <section id="view-setup" class="view" hidden>
+    <p class="hint">Noch kein Tresor eingerichtet. Lege ein Master-Passwort und eine
+      Passphrase zum Entsperren fest.</p>
+
+    <form id="form-setup" novalidate>
+      <label for="setup-master">Master-Passwort</label>
+      <input type="password" id="setup-master" autocomplete="new-password" required>
+
+      <label for="setup-passphrase">Passphrase</label>
+      <input type="password" id="setup-passphrase" autocomplete="new-password" required>
+
+      <label for="setup-passphrase-confirm">Passphrase bestätigen</label>
+      <input type="password" id="setup-passphrase-confirm" autocomplete="new-password" required>
+
+      <p id="setup-error" class="error" role="alert" hidden></p>
+
+      <button type="submit" class="primary">Tresor einrichten</button>
+    </form>
+  </section>
+
+  <!-- Zustand 2: Gesperrt -->
+  <section id="view-locked" class="view" hidden>
+    <p class="hint">Der Tresor ist gesperrt. Gib deine Passphrase ein, um fortzufahren.</p>
+
+    <form id="form-unlock" novalidate>
+      <label for="unlock-passphrase">Passphrase</label>
+      <input type="password" id="unlock-passphrase" autocomplete="current-password" required>
+
+      <p id="unlock-error" class="error" role="alert" hidden></p>
+
+      <button type="submit" class="primary">Entsperren</button>
+    </form>
+  </section>
+
+  <!-- Zustand 3: Entsperrt -->
+  <section id="view-unlocked" class="view" hidden>
+    <form id="form-generate" novalidate>
+      <label for="gen-serial">Seriennummer</label>
+      <input type="text" id="gen-serial" autocomplete="off" required>
+
+      <label for="gen-etp">ETP Identification</label>
+      <input type="text" id="gen-etp" autocomplete="off" required>
+
+      <p id="generate-error" class="error" role="alert" hidden></p>
+
+      <button type="submit" class="primary">Passwort generieren</button>
+    </form>
+
+    <div class="result-block">
+      <label for="gen-result">Generiertes Passwort</label>
+      <input type="text" id="gen-result" readonly placeholder="—">
+      <div class="result-actions">
+        <button type="button" id="btn-copy" class="secondary" disabled>In Zwischenablage kopieren</button>
+      </div>
+      <p id="copy-status" class="status" role="status" aria-live="polite"></p>
+    </div>
+
+    <hr>
+
+    <button type="button" id="btn-lock" class="secondary">Sperren</button>
+
+    <details class="settings">
+      <summary>Einstellungen</summary>
+
+      <form id="form-change-passphrase" novalidate>
+        <h2>Passphrase ändern</h2>
+        <label for="change-old">Aktuelle Passphrase</label>
+        <input type="password" id="change-old" autocomplete="current-password" required>
+
+        <label for="change-new">Neue Passphrase</label>
+        <input type="password" id="change-new" autocomplete="new-password" required>
+
+        <p id="change-error" class="error" role="alert" hidden></p>
+        <p id="change-status" class="status" role="status" aria-live="polite"></p>
+
+        <button type="submit" class="secondary">Passphrase ändern</button>
+      </form>
+    </details>
+  </section>
+
+  <!-- Zurücksetzen: eigener, geteilter Bereich -- erreichbar sowohl gesperrt als
+       auch entsperrt, damit eine vergessene Passphrase nicht in eine Sackgasse
+       fuehrt. Nicht sichtbar vor der Ersteinrichtung (es gibt noch nichts, das
+       zurueckgesetzt werden koennte). -->
+  <section id="view-reset" class="view" hidden>
+    <details class="settings">
+      <summary>Zurücksetzen</summary>
+
+      <div class="danger-zone">
+        <p class="hint">Löscht das hinterlegte Master-Passwort und die Passphrase
+          unwiderruflich aus diesem Browser. <strong>Nach dem Zurücksetzen muss das
+          Master-Passwort neu eingegeben werden</strong> — wer es nicht mehr kennt,
+          verliert damit den Zugang zu diesem Tool und kann keine bereits vergebenen
+          Gerätepasswörter mehr nachbilden. Dieser Schritt lässt sich nicht rückgängig
+          machen.</p>
+
+        <button type="button" id="btn-reset" class="danger">Tresor zurücksetzen</button>
+
+        <div id="reset-confirm" class="confirm-box" hidden>
+          <p>Wirklich zurücksetzen? Das Master-Passwort wird endgültig gelöscht und
+            muss danach neu eingegeben werden. Ohne das Master-Passwort sind bereits
+            vergebene Gerätepasswörter nicht mehr nachbildbar. Diese Aktion kann
+            nicht rückgängig gemacht werden.</p>
+          <button type="button" id="btn-reset-confirm" class="danger">Ja, zurücksetzen</button>
+          <button type="button" id="btn-reset-cancel" class="secondary">Abbrechen</button>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <p id="global-error" class="error" role="alert" hidden></p>
+</div>
+<script>
+// ==== generiert aus extension/lib/* durch web/build.mjs -- nicht von Hand aendern ====
+
+/**
+ * Bit-genauer Nachbau von CPythons `random`-Modul, soweit die Passwortableitung
+ * es benoetigt: seed(int), randint(a, b), choice(seq).
+ *
+ * WARUM DAS EXAKT SEIN MUSS
+ * -------------------------
+ * generate_password() streut Sonderzeichen an Positionen ein, die aus einem mit
+ * dem SHA-256-Hash geseedeten Mersenne Twister stammen. Weicht hier auch nur ein
+ * Bit ab, entstehen andere Passwoerter -- und damit waeren alle bereits
+ * ausgerollten Geraete nicht mehr erreichbar.
+ *
+ * Referenz: CPython Modules/_randommodule.c (init_by_array, genrand_uint32,
+ * getrandbits) und Lib/random.py (_randbelow_with_getrandbits, randrange,
+ * choice). Der Algorithmus ist zwischen CPython 3.9 und 3.14 unveraendert.
+ *
+ * Abgesichert durch test/vectors.json (3005 Vektoren aus dem Originaltool),
+ * ausgefuehrt von test/run-tests.mjs.
+ */
+
+const N = 624;
+const M = 397;
+const MATRIX_A = 0x9908b0df;
+const UPPER_MASK = 0x80000000;
+const LOWER_MASK = 0x7fffffff;
+
+class MersenneTwister {
+  constructor() {
+    this.mt = new Uint32Array(N);
+    this.mti = N + 1;
+  }
+
+  /** CPython init_genrand() */
+  initGenrand(s) {
+    this.mt[0] = s >>> 0;
+    for (let i = 1; i < N; i++) {
+      const prev = this.mt[i - 1] ^ (this.mt[i - 1] >>> 30);
+      this.mt[i] = (Math.imul(1812433253, prev) + i) >>> 0;
+    }
+    this.mti = N;
+  }
+
+  /** CPython init_by_array() -- so seedet random.seed(int) */
+  initByArray(key) {
+    this.initGenrand(19650218);
+    let i = 1;
+    let j = 0;
+    let k = Math.max(N, key.length);
+    for (; k; k--) {
+      const prev = this.mt[i - 1] ^ (this.mt[i - 1] >>> 30);
+      this.mt[i] = (((this.mt[i] ^ Math.imul(prev, 1664525)) >>> 0) + key[j] + j) >>> 0;
+      i++; j++;
+      if (i >= N) { this.mt[0] = this.mt[N - 1]; i = 1; }
+      if (j >= key.length) j = 0;
+    }
+    for (k = N - 1; k; k--) {
+      const prev = this.mt[i - 1] ^ (this.mt[i - 1] >>> 30);
+      this.mt[i] = (((this.mt[i] ^ Math.imul(prev, 1566083941)) >>> 0) - i) >>> 0;
+      i++;
+      if (i >= N) { this.mt[0] = this.mt[N - 1]; i = 1; }
+    }
+    this.mt[0] = 0x80000000;
+  }
+
+  /** CPython genrand_uint32() inklusive Tempering */
+  genrandUint32() {
+    let y;
+    if (this.mti >= N) {
+      let kk;
+      for (kk = 0; kk < N - M; kk++) {
+        y = ((this.mt[kk] & UPPER_MASK) | (this.mt[kk + 1] & LOWER_MASK)) >>> 0;
+        this.mt[kk] = (this.mt[kk + M] ^ (y >>> 1) ^ (y & 1 ? MATRIX_A : 0)) >>> 0;
+      }
+      for (; kk < N - 1; kk++) {
+        y = ((this.mt[kk] & UPPER_MASK) | (this.mt[kk + 1] & LOWER_MASK)) >>> 0;
+        this.mt[kk] = (this.mt[kk + (M - N)] ^ (y >>> 1) ^ (y & 1 ? MATRIX_A : 0)) >>> 0;
+      }
+      y = ((this.mt[N - 1] & UPPER_MASK) | (this.mt[0] & LOWER_MASK)) >>> 0;
+      this.mt[N - 1] = (this.mt[M - 1] ^ (y >>> 1) ^ (y & 1 ? MATRIX_A : 0)) >>> 0;
+      this.mti = 0;
+    }
+    y = this.mt[this.mti++];
+    y = (y ^ (y >>> 11)) >>> 0;
+    y = (y ^ ((y << 7) & 0x9d2c5680)) >>> 0;
+    y = (y ^ ((y << 15) & 0xefc60000)) >>> 0;
+    y = (y ^ (y >>> 18)) >>> 0;
+    return y >>> 0;
+  }
+}
+
+/**
+ * CPython random_seed(): abs(n) wird in 32-Bit-Woerter zerlegt, little endian.
+ */
+function seedKeyFromBigInt(n) {
+  let v = n < 0n ? -n : n;
+  if (v === 0n) return [0];
+  const key = [];
+  while (v > 0n) {
+    key.push(Number(v & 0xffffffffn));
+    v >>= 32n;
+  }
+  return key;
+}
+
+class PyRandom {
+  /** @param {bigint} seed entspricht random.seed(seed) */
+  constructor(seed) {
+    this.mt = new MersenneTwister();
+    this.mt.initByArray(seedKeyFromBigInt(seed));
+  }
+
+  /**
+   * CPython getrandbits(). Nur der Pfad k <= 32 ist implementiert; das genuegt,
+   * solange _randbelow nur mit n <= 2**32 aufgerufen wird (hier: Passwortlaenge
+   * und Alphabetgroessen). Groessere k wuerden still falsche Werte liefern,
+   * deshalb ein harter Fehler statt einer stillen Abweichung.
+   */
+  getrandbits(k) {
+    if (k === 0) return 0;
+    if (k > 32) throw new RangeError(`getrandbits(${k}): nur k <= 32 implementiert`);
+    return this.mt.genrandUint32() >>> (32 - k);
+  }
+
+  /** CPython _randbelow_with_getrandbits(): Rejection Sampling ueber n.bit_length() */
+  _randbelow(n) {
+    if (!n) return 0;
+    const k = 32 - Math.clz32(n); // entspricht n.bit_length()
+    let r = this.getrandbits(k);
+    while (r >= n) r = this.getrandbits(k);
+    return r;
+  }
+
+  /** CPython randint(a, b) == randrange(a, b+1) == a + _randbelow(b+1-a) */
+  randint(a, b) {
+    return a + this._randbelow(b + 1 - a);
+  }
+
+  /** CPython choice(seq) == seq[_randbelow(len(seq))] */
+  choice(seq) {
+    return seq[this._randbelow(seq.length)];
+  }
+}
+
+/**
+ * Passwortableitung -- 1:1 aequivalent zu generate_password() in
+ * src/passwort_generator_gui_mit_settings.py.
+ *
+ * ACHTUNG: Diese Funktion ist ein Kompatibilitaetsvertrag, kein Design.
+ * Jede Aenderung invalidiert bereits ausgerollte Geraetepasswoerter. Wer hier
+ * etwas anfasst, muss test/run-tests.mjs gruen halten -- die Vektoren stammen
+ * aus dem Originaltool.
+ */
+
+const SPECIAL_CHARS = '!@#$%^&*()';
+const DIGITS = '0123456789';
+const UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const LOWER = 'abcdefghijklmnopqrstuvwxyz';
+
+/** Python: base64.urlsafe_b64encode(bytes).decode() -- inklusive "="-Padding */
+function base64urlFromBytes(bytes) {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+/** Python: int.from_bytes(bytes, 'big') */
+function bytesToBigInt(bytes) {
+  let v = 0n;
+  for (const b of bytes) v = (v << 8n) | BigInt(b);
+  return v;
+}
+
+async function sha256(str) {
+  const data = new TextEncoder().encode(str);
+  return new Uint8Array(await crypto.subtle.digest('SHA-256', data));
+}
+
+/** Zeichen an Position `pos` ersetzen (Python-Slicing-Aequivalent) */
+function replaceAt(str, pos, ch) {
+  return str.slice(0, pos) + ch + str.slice(pos + 1);
+}
+
+/**
+ * @param {string} serial          Seriennummer
+ * @param {string} etpId           ETP Identification
+ * @param {string} masterPassword  Master-Passwort im Klartext
+ * @param {number} length          Passwortlaenge (Original-Default: 16)
+ * @returns {Promise<string>}
+ */
+async function generatePassword(serial, etpId, masterPassword, length = 16) {
+  const combined = `${serial}:${etpId}:${masterPassword}`;
+  const hashBytes = await sha256(combined);
+  const b64 = base64urlFromBytes(hashBytes);
+
+  const rng = new PyRandom(bytesToBigInt(hashBytes));
+
+  let password = b64.repeat(Math.floor(length / b64.length) + 1).slice(0, length);
+
+  const numSpecials = Math.max(2, Math.floor(length / 8));
+  for (let i = 0; i < numSpecials; i++) {
+    const pos = rng.randint(0, password.length - 1);
+    password = replaceAt(password, pos, rng.choice(SPECIAL_CHARS));
+  }
+
+  // Reihenfolge der Zweige ist relevant: jeder verbraucht RNG-Zustand.
+  if (!/[0-9]/.test(password)) {
+    const pos = rng.randint(0, password.length - 1);
+    password = replaceAt(password, pos, rng.choice(DIGITS));
+  }
+  if (!/[A-Z]/.test(password)) {
+    const pos = rng.randint(0, password.length - 1);
+    password = replaceAt(password, pos, rng.choice(UPPER));
+  }
+  if (!/[a-z]/.test(password)) {
+    const pos = rng.randint(0, password.length - 1);
+    password = replaceAt(password, pos, rng.choice(LOWER));
+  }
+
+  return password;
+}
+
+/**
+ * vault.js -- sicherer Speicher fuer das Master-Passwort.
+ *
+ * Bedrohungsmodell
+ * -----------------
+ * Schuetzt gegen: Auslesen der Chrome-Profildateien. `chrome.storage.local`
+ * landet unverschluesselt auf der Platte (LevelDB); jeder mit Dateizugriff auf
+ * das Profil -- Backup, gestohlene Festplatte, ein anderes Benutzerkonto mit
+ * Leserechten -- koennte es sonst im Klartext lesen. Hier liegt dort nur noch
+ * AES-256-GCM-Ciphertext, dessen Schluessel per PBKDF2-SHA-256 (hohe
+ * Iterationszahl) aus einer Passphrase abgeleitet wird, die NIRGENDS
+ * gespeichert wird. Das entsperrte Master-Passwort liegt ausschliesslich in
+ * `chrome.storage.session` -- reiner Arbeitsspeicher, nie auf Platte
+ * geschrieben, wird beim Neustart des Browsers verworfen.
+ *
+ * Schuetzt NICHT gegen: Schadsoftware oder eine boesartige Extension mit
+ * Zugriff auf den laufenden Browser-Prozess (kann die Session waehrend sie
+ * entsperrt ist mitlesen, oder die Passphrase bei Eingabe per Keylogger
+ * abgreifen), noch gegen einen Angreifer, der bereits Code im Kontext dieser
+ * Extension ausfuehren kann. Das ist kein Ersatz fuer ein echtes
+ * Betriebssystem-Secret-Store, sondern schliesst genau die Luecke des
+ * Vorgaengertools.
+ *
+ * Das Vorgaengertool hat Fernet-Key und verschluesseltes Master-Passwort
+ * gemeinsam in einer Klartextdatei abgelegt -- der Schluessel lag also neben
+ * dem Schloss, das ist Sicherheitstheater, kein Schutz. Dieses Modul speichert
+ * den Schluessel nie: er wird bei jedem Entsperren neu aus der Passphrase
+ * abgeleitet und existiert nur fluechtig im Speicher.
+ */
+
+/** OWASP-Empfehlung (Stand 2023) fuer PBKDF2-HMAC-SHA256. */
+const PBKDF2_ITERATIONS = 600_000;
+const SALT_BYTES = 16;
+const IV_BYTES = 12;
+const AES_KEY_BITS = 256;
+const VAULT_SCHEMA_VERSION = 1;
+
+const LOCAL_STORAGE_KEY = 'vault.encryptedMasterPassword';
+const SESSION_STORAGE_KEY = 'vault.unlockedMasterPassword';
+
+/** @param {Uint8Array} bytes */
+function bytesToBase64(bytes) {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+/** @param {string} b64 */
+function base64ToBytes(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+/** Leitet per PBKDF2-SHA-256 einen AES-GCM-Schluessel aus der Passphrase ab. */
+async function deriveAesKey(passphrase, salt, iterations) {
+  const passphraseKey = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(passphrase),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+    passphraseKey,
+    { name: 'AES-GCM', length: AES_KEY_BITS },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+/**
+ * Verschluesselt das Master-Passwort mit frischem Salt und IV.
+ * Salt und IV sind nicht geheim und werden zusammen mit dem Ciphertext
+ * gespeichert; die Iterationszahl wird mitgespeichert, damit sie spaeter
+ * erhoeht werden kann, ohne bereits verschluesselte Eintraege unlesbar zu
+ * machen.
+ */
+async function encryptMasterPassword(masterPassword, passphrase) {
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
+  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
+  const key = await deriveAesKey(passphrase, salt, PBKDF2_ITERATIONS);
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    new TextEncoder().encode(masterPassword)
+  );
+  return {
+    version: VAULT_SCHEMA_VERSION,
+    iterations: PBKDF2_ITERATIONS,
+    salt: bytesToBase64(salt),
+    iv: bytesToBase64(iv),
+    ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
+  };
+}
+
+/**
+ * Entschluesselt einen Vault-Eintrag. Liefert bei falscher Passphrase `null`
+ * statt eine Exception zu werfen -- AES-GCM meldet einen falschen Schluessel
+ * ueber einen fehlgeschlagenen Auth-Tag, und der Aufrufer soll daraus nicht
+ * mehr ableiten koennen (muessen) als "hat nicht geklappt".
+ */
+async function decryptMasterPassword(entry, passphrase) {
+  try {
+    const salt = base64ToBytes(entry.salt);
+    const iv = base64ToBytes(entry.iv);
+    const ciphertext = base64ToBytes(entry.ciphertext);
+    const key = await deriveAesKey(passphrase, salt, entry.iterations);
+    const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+    return new TextDecoder().decode(plaintext);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Erstellt eine Vault-Instanz gegen ein injizierbares Storage-Backend.
+ *
+ * @param {{local: object, session: object}} storage  Objekte mit der
+ *   `chrome.storage.StorageArea`-Schnittstelle (get/set/remove, Promise-
+ *   basiert). `local` haelt den verschluesselten Blob dauerhaft, `session`
+ *   haelt das entsperrte Master-Passwort nur fuer die laufende Sitzung.
+ */
+function createVault(storage) {
+  /** @returns {Promise<object|null>} der gespeicherte Vault-Eintrag oder null */
+  async function readVaultEntry() {
+    const result = await storage.local.get(LOCAL_STORAGE_KEY);
+    return result[LOCAL_STORAGE_KEY] ?? null;
+  }
+
+  /**
+   * @returns {Promise<boolean>} true, wenn ein verschluesseltes Master-
+   *   Passwort hinterlegt ist.
+   */
+  async function isConfigured() {
+    return (await readVaultEntry()) !== null;
+  }
+
+  /**
+   * Verschluesselt das Master-Passwort mit der Passphrase und speichert es.
+   * Ueberschreibt einen eventuell vorhandenen aelteren Eintrag.
+   *
+   * @param {string} masterPassword
+   * @param {string} passphrase
+   */
+  async function setup(masterPassword, passphrase) {
+    const entry = await encryptMasterPassword(masterPassword, passphrase);
+    await storage.local.set({ [LOCAL_STORAGE_KEY]: entry });
+  }
+
+  /**
+   * Entschluesselt das Master-Passwort mit der angegebenen Passphrase. Bei
+   * Erfolg wird es in `chrome.storage.session` abgelegt.
+   *
+   * @param {string} passphrase
+   * @returns {Promise<boolean>} true bei Erfolg, false bei falscher
+   *   Passphrase oder wenn noch kein Master-Passwort hinterlegt ist.
+   */
+  async function unlock(passphrase) {
+    const entry = await readVaultEntry();
+    if (!entry) return false;
+
+    const masterPassword = await decryptMasterPassword(entry, passphrase);
+    if (masterPassword === null) return false;
+
+    await storage.session.set({ [SESSION_STORAGE_KEY]: masterPassword });
+    return true;
+  }
+
+  /** @returns {Promise<boolean>} true, wenn aktuell ein Master-Passwort entsperrt ist. */
+  async function isUnlocked() {
+    const result = await storage.session.get(SESSION_STORAGE_KEY);
+    return result[SESSION_STORAGE_KEY] !== undefined;
+  }
+
+  /** @returns {Promise<string|null>} das entsperrte Master-Passwort, oder null. */
+  async function getMasterPassword() {
+    const result = await storage.session.get(SESSION_STORAGE_KEY);
+    return result[SESSION_STORAGE_KEY] ?? null;
+  }
+
+  /** Entfernt das entsperrte Master-Passwort aus der Session. Der verschluesselte Eintrag in `local` bleibt unangetastet. */
+  async function lock() {
+    await storage.session.remove(SESSION_STORAGE_KEY);
+  }
+
+  /**
+   * Wechselt die Passphrase: entschluesselt mit der alten, verschluesselt
+   * das Master-Passwort neu mit der neuen (neuer Salt/IV).
+   *
+   * @param {string} alt
+   * @param {string} neu
+   * @returns {Promise<boolean>} true bei Erfolg, false wenn `alt` falsch ist.
+   */
+  async function changePassphrase(alt, neu) {
+    const entry = await readVaultEntry();
+    if (!entry) return false;
+
+    const masterPassword = await decryptMasterPassword(entry, alt);
+    if (masterPassword === null) return false;
+
+    await setup(masterPassword, neu);
+    return true;
+  }
+
+  /** Loescht sowohl den verschluesselten Eintrag als auch die entsperrte Session. */
+  async function reset() {
+    await storage.local.remove(LOCAL_STORAGE_KEY);
+    await storage.session.remove(SESSION_STORAGE_KEY);
+  }
+
+  return {
+    isConfigured,
+    setup,
+    unlock,
+    isUnlocked,
+    getMasterPassword,
+    lock,
+    changePassphrase,
+    reset,
+  };
+}
+
+// --- Speicher-Adapter: chrome.storage.StorageArea ueber Web-Storage ---------
+// local  -> localStorage   (dauerhaft, haelt den verschluesselten Blob)
+// session-> sessionStorage (fluechtig, haelt das entsperrte Master-Passwort;
+//                           weg beim Schliessen des Tabs -- nie auf Platte)
+function webStorageArea(store) {
+  return {
+    async get(key) {
+      const raw = store.getItem(key);
+      return raw === null ? {} : { [key]: JSON.parse(raw) };
+    },
+    async set(obj) {
+      for (const [k, v] of Object.entries(obj)) store.setItem(k, JSON.stringify(v));
+    },
+    async remove(key) {
+      store.removeItem(key);
+    },
+  };
+}
+const vault = createVault({
+  local: webStorageArea(window.localStorage),
+  session: webStorageArea(window.sessionStorage),
+});
+
+const views = {
+  setup: document.getElementById('view-setup'),
+  locked: document.getElementById('view-locked'),
+  unlocked: document.getElementById('view-unlocked'),
+};
+
+const viewReset = document.getElementById('view-reset');
+const globalError = document.getElementById('global-error');
+
+function showView(name) {
+  for (const key of Object.keys(views)) {
+    views[key].hidden = key !== name;
+  }
+}
+
+function setText(el, text) {
+  el.textContent = text;
+}
+
+function showError(el, message) {
+  setText(el, message);
+  el.hidden = false;
+}
+
+function hideError(el) {
+  el.hidden = true;
+  setText(el, '');
+}
+
+function showGlobalError(message) {
+  showError(globalError, message);
+}
+
+/**
+ * Aktuellen Zustand ermitteln und passende Ansicht rendern.
+ *
+ * Der Zuruecksetzen-Bereich (#view-reset) ist bewusst kein vierter Eintrag in
+ * `views`, sondern wird unabhaengig davon ein-/ausgeblendet: Er muss sowohl im
+ * gesperrten als auch im entsperrten Zustand erreichbar sein, damit eine
+ * vergessene Passphrase nicht in eine Sackgasse fuehrt. Vor der
+ * Ersteinrichtung gibt es dagegen noch nichts zum Zuruecksetzen.
+ */
+async function refresh() {
+  hideError(globalError);
+  try {
+    const configured = await vault.isConfigured();
+    viewReset.hidden = !configured;
+
+    if (!configured) {
+      showView('setup');
+      return;
+    }
+    const unlocked = await vault.isUnlocked();
+    if (!unlocked) {
+      showView('locked');
+      return;
+    }
+    showView('unlocked');
+  } catch (err) {
+    showGlobalError('Der Tresorstatus konnte nicht ermittelt werden.');
+  }
+}
+
+// --- Zustand 1: Ersteinrichtung -------------------------------------------
+
+const formSetup = document.getElementById('form-setup');
+const setupMaster = document.getElementById('setup-master');
+const setupPassphrase = document.getElementById('setup-passphrase');
+const setupPassphraseConfirm = document.getElementById('setup-passphrase-confirm');
+const setupError = document.getElementById('setup-error');
+
+formSetup.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  hideError(setupError);
+
+  const master = setupMaster.value;
+  const passphrase = setupPassphrase.value;
+  const passphraseConfirm = setupPassphraseConfirm.value;
+
+  if (!master.trim()) {
+    showError(setupError, 'Bitte ein Master-Passwort eingeben.');
+    return;
+  }
+  if (!passphrase) {
+    showError(setupError, 'Bitte eine Passphrase eingeben.');
+    return;
+  }
+  if (passphrase !== passphraseConfirm) {
+    showError(setupError, 'Die Passphrasen stimmen nicht überein.');
+    return;
+  }
+
+  try {
+    await vault.setup(master, passphrase);
+    formSetup.reset();
+    await refresh();
+  } catch (err) {
+    showError(setupError, 'Einrichtung fehlgeschlagen. Bitte erneut versuchen.');
+  }
+});
+
+// --- Zustand 2: Gesperrt ---------------------------------------------------
+
+const formUnlock = document.getElementById('form-unlock');
+const unlockPassphrase = document.getElementById('unlock-passphrase');
+const unlockError = document.getElementById('unlock-error');
+
+formUnlock.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  hideError(unlockError);
+
+  const passphrase = unlockPassphrase.value;
+  if (!passphrase) {
+    showError(unlockError, 'Bitte die Passphrase eingeben.');
+    return;
+  }
+
+  try {
+    const ok = await vault.unlock(passphrase);
+    if (!ok) {
+      showError(unlockError, 'Passphrase ist falsch.');
+      return;
+    }
+    formUnlock.reset();
+    await refresh();
+  } catch (err) {
+    showError(unlockError, 'Passphrase ist falsch.');
+  }
+});
+
+// --- Zustand 3: Entsperrt --------------------------------------------------
+
+const formGenerate = document.getElementById('form-generate');
+const genSerial = document.getElementById('gen-serial');
+const genEtp = document.getElementById('gen-etp');
+const generateError = document.getElementById('generate-error');
+const genResult = document.getElementById('gen-result');
+const btnCopy = document.getElementById('btn-copy');
+const copyStatus = document.getElementById('copy-status');
+const btnLock = document.getElementById('btn-lock');
+
+formGenerate.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  hideError(generateError);
+  setText(copyStatus, '');
+
+  const serial = genSerial.value.trim();
+  const etpId = genEtp.value.trim();
+
+  if (!serial) {
+    showError(generateError, 'Bitte die Seriennummer eingeben.');
+    return;
+  }
+  if (!etpId) {
+    showError(generateError, 'Bitte die ETP Identification eingeben.');
+    return;
+  }
+
+  try {
+    const master = await vault.getMasterPassword();
+    if (!master) {
+      showError(generateError, 'Tresor ist gesperrt. Bitte erneut entsperren.');
+      await refresh();
+      return;
+    }
+    const password = await generatePassword(serial, etpId, master);
+    genResult.value = password;
+    btnCopy.disabled = false;
+  } catch (err) {
+    showError(generateError, 'Passwort konnte nicht generiert werden.');
+  }
+});
+
+genResult.addEventListener('click', () => {
+  if (genResult.value) {
+    genResult.select();
+  }
+});
+
+btnCopy.addEventListener('click', async () => {
+  setText(copyStatus, '');
+  if (!genResult.value) {
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(genResult.value);
+    setText(copyStatus, 'In die Zwischenablage kopiert.');
+  } catch (err) {
+    setText(copyStatus, 'Kopieren fehlgeschlagen. Bitte manuell markieren und kopieren.');
+  }
+});
+
+btnLock.addEventListener('click', async () => {
+  try {
+    await vault.lock();
+  } finally {
+    genResult.value = '';
+    btnCopy.disabled = true;
+    setText(copyStatus, '');
+    formGenerate.reset();
+    await refresh();
+  }
+});
+
+// --- Einstellungen: Passphrase ändern ---------------------------------------
+
+const formChangePassphrase = document.getElementById('form-change-passphrase');
+const changeOld = document.getElementById('change-old');
+const changeNew = document.getElementById('change-new');
+const changeError = document.getElementById('change-error');
+const changeStatus = document.getElementById('change-status');
+
+formChangePassphrase.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  hideError(changeError);
+  setText(changeStatus, '');
+
+  const oldPassphrase = changeOld.value;
+  const newPassphrase = changeNew.value;
+
+  if (!oldPassphrase || !newPassphrase) {
+    showError(changeError, 'Bitte beide Felder ausfüllen.');
+    return;
+  }
+
+  try {
+    const ok = await vault.changePassphrase(oldPassphrase, newPassphrase);
+    if (!ok) {
+      showError(changeError, 'Aktuelle Passphrase ist falsch.');
+      return;
+    }
+    formChangePassphrase.reset();
+    setText(changeStatus, 'Passphrase wurde geändert.');
+  } catch (err) {
+    showError(changeError, 'Passphrase konnte nicht geändert werden.');
+  }
+});
+
+// --- Zurücksetzen (geteilter Bereich, gesperrt und entsperrt erreichbar) ---
+
+const btnReset = document.getElementById('btn-reset');
+const resetConfirm = document.getElementById('reset-confirm');
+const btnResetConfirm = document.getElementById('btn-reset-confirm');
+const btnResetCancel = document.getElementById('btn-reset-cancel');
+
+btnReset.addEventListener('click', () => {
+  resetConfirm.hidden = false;
+});
+
+btnResetCancel.addEventListener('click', () => {
+  resetConfirm.hidden = true;
+});
+
+btnResetConfirm.addEventListener('click', async () => {
+  try {
+    await vault.reset();
+  } finally {
+    resetConfirm.hidden = true;
+    genResult.value = '';
+    btnCopy.disabled = true;
+    formGenerate.reset();
+    formChangePassphrase.reset();
+    setText(changeStatus, '');
+    await refresh();
+  }
+});
+
+refresh();
+</script>
+</body>
+</html>

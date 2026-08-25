@@ -9,17 +9,29 @@ ohne es irgendwo speichern zu müssen.
 ## Aktuelle Aufgabe
 
 **Ausgangsproblem:** SentinelOne stuft die Windows-EXE wiederholt als Schadsoftware ein
-und löscht sie auf den Firmenlaptops (False Positive). Zwei Stränge verfolgt:
+und löscht sie auf den Firmenlaptops (False Positive). Drei Stränge verfolgt:
 
 1. **EXE gehärtet** (`--onedir` + Metadaten) — entschärft, aber nicht die Wurzel.
    Details: siehe [SentinelOne](#sentinelone-false-positive).
-2. **Chrome-Erweiterung als Ersatz** (`extension/`) — löst es an der Wurzel, weil es
-   kein PE-Binary mehr gibt. **Das ist der eingeschlagene Weg.** Stand: siehe
+2. **Chrome-Erweiterung** (`extension/`) — kein PE-Binary mehr, löst SentinelOne an
+   der Wurzel. Im Store veröffentlicht (`mjilpihhhiidgbjkjojaalnmgiabgmip`), **aber
+   auf den verwalteten Laptops durch die Chrome-Enterprise-Richtlinie blockiert**
+   („Dein Administrator hat diesen Artikel blockiert"). Freigeben kann nur die IT
+   per `ExtensionSettings`/Force-Install auf die betreffende OU. Stand: siehe
    [Chrome Web Store](#chrome-web-store-veröffentlichung).
+3. **Browserbasiertes Web-Tool** (`web/`) — eine eigenständige HTML-Datei, die im
+   Browser geöffnet wird. Weder PE-Binary (kein SentinelOne) noch Erweiterung
+   (keine Extension-Richtlinie). **Das ist der jetzt eingeschlagene Weg.** Stand:
+   siehe [Web-Version](#web-version-web).
 
-**Aktueller Fokus:** Die Extension wird als **öffentlicher** Eintrag im Chrome Web
-Store veröffentlicht (Entscheidung des Nutzers, trotz des Hinweises unten zur
-Offenlegung des Algorithmus). Listing ist in Arbeit.
+**Aktueller Fokus:** Web-Version für den Rollout. Die Extension bleibt gebaut und
+im Store, ist aber ohne IT-Freigabe auf den Geräten nicht installierbar.
+
+> **Verworfen:** Portable-Chrome, um die Extension-Sperre zu „umgehen". Chrome
+> liest Richtlinien maschinenweit aus Registry/Managed-Preferences — die Sperre
+> gilt dann genauso; Force-Install/Auto-Update entfallen; und eine ungemanagte
+> portable Browser-Binary auf dem Firmenlaptop ist genau das EDR-Muster, das man
+> loswerden wollte. Umgehung ist nicht der Weg (vgl. SentinelOne-Abschnitt).
 
 ## Struktur
 
@@ -35,6 +47,10 @@ IoT-DACH-PasswordGenerator/
 ├── dist/windows/                                gebaute EXEn (eingecheckt)
 ├── dist/macos/                                  gebauter macOS-Build
 ├── extension/                                   Chrome-Erweiterung (MV3) — s. u.
+├── web/                                         browserbasiertes Web-Tool — s. u.
+│   ├── index.html                              generierte, eigenständige Seite (eingecheckt)
+│   ├── build.mjs                               Generator aus extension/lib/* + Vektoren-Gate
+│   └── README.md                               Nutzung/Hosting/Sicherheitsmodell
 ├── ios/                                         SwiftUI-App + TestFlight-Setup
 ├── scripts/setup-testflight.sh                  interaktiver TestFlight-Helfer
 ├── legacy/SE-PWD-GEN/                           Vorgängerversionen, NICHT verwenden (s.u.)
@@ -44,7 +60,14 @@ IoT-DACH-PasswordGenerator/
 Die CI-Workflows liegen weiterhin unter `../.github/workflows/` — GitHub Actions
 akzeptiert Workflows **ausschließlich** im Repo-Root, sie können nicht mit in diesen
 Ordner. Ihre Pfade zeigen auf `IoT-DACH-PasswordGenerator/…`; bei Umbenennung dieses
-Ordners müssen `build.yml` und `build-ios.yml` mit angepasst werden.
+Ordners müssen `build.yml`, `build-ios.yml` und `checks.yml` mit angepasst werden.
+
+- `build.yml` — baut die EXEn (Windows/macOS/Linux).
+- `build-ios.yml` — iOS-Build.
+- `checks.yml` — JS-Gate: Extension-Tests (Ableitung/Tresor/Popup) **und**
+  Web-Build inkl. Vektoren-Verifikation und Drift-Check (`web/index.html` muss
+  dem entsprechen, was `web/build.mjs` aus dem aktuellen `extension/lib/*`
+  erzeugt). Läuft bei jedem Push/PR auf `main`/`master`.
 
 ## Entwickeln
 
@@ -152,9 +175,20 @@ Klartextdatei lagen — der Schlüssel lag neben dem Schloss.
 > Gerätepasswort. Die Vektoren beweisen, dass JS und Python identisch rechnen —
 > nicht, dass in der Praxis dasselbe Master-Passwort verwendet wurde.
 
-> ⚠️ **Zwei Implementierungen derselben Krypto driften auseinander.** Entweder
-> die Extension wird die einzige Quelle und die EXE wird stillgelegt, oder beide
-> bekommen die Vektoren als CI-Gate. „Einfach beide pflegen" ist keine Option.
+> ⚠️ **Mehrere Implementierungen derselben Krypto driften auseinander.** Stand jetzt:
+> - **Extension und Web-Version teilen sich eine Quelle** (`extension/lib/*`); die
+>   Web-Version ist daraus generiert (`web/build.mjs`). Beide sind durch das
+>   Vektoren-Gate in `checks.yml` zusammengehalten — sie können nicht
+>   auseinanderdriften, solange das Gate grün ist.
+> - **Die EXE (`src/`, Python) ist die verbliebene separate Implementierung** und
+>   **nicht** durch das CI-Gate abgedeckt — sie erzeugt die Vektoren, prüft sich
+>   aber nicht gegen sie.
+>
+> Da der Web-Weg eingeschlagen ist, ist die naheliegende Konsequenz, **EXE (und
+> ggf. die Extension) stillzulegen**, sobald die Web-Version im Feld verifiziert
+> ist (siehe offener Punkt: Abgleich gegen ein real ausgerolltes Gerätepasswort).
+> „Einfach alle pflegen" ist keine Option. Entscheidung, welche Formen abgeschaltet
+> werden, liegt beim Nutzer.
 
 ### Feld-Zuordnung EXE ↔ Extension (Stolperfalle)
 
@@ -181,6 +215,48 @@ print(Fernet(d["fernet_key"].encode()).decrypt(d["encrypted_master"].encode()).d
 > Der Klartextwert steht **bewusst nicht in dieser Datei** — CLAUDE.md ist im Git.
 > Verifiziert (Test SN-TESTGERAET-01): EXE-Logik und Extension liefern mit demselben
 > Klartext-Master dasselbe Gerätepasswort. Damit ist der Umstieg passwortkompatibel.
+
+## Web-Version (`web/`)
+
+Eine einzige, eigenständige HTML-Datei, die im Browser geöffnet wird — ohne
+Installation, ohne Erweiterung, ohne EXE. Umgeht damit **beide** Blocker: kein
+PE-Binary (kein SentinelOne) und keine Erweiterung (keine Extension-Richtlinie).
+Der jetzt eingeschlagene Weg.
+
+`web/index.html` ist **generiert, nicht von Hand geschrieben.** `web/build.mjs`
+fügt die *identischen* Extension-Quellen (`extension/lib/pyrandom.js`,
+`derive.js`, `vault.js`) zu einer Datei zusammen; `chrome.storage.local/session`
+wird durch `localStorage`/`sessionStorage` ersetzt (gleiche Semantik: dauerhaft
+verschlüsselt / flüchtig entsperrt). Es gibt damit **keine** dritte, separat
+gepflegte Krypto-Implementierung — nur eine Quelle der Wahrheit in
+`extension/lib/`.
+
+```bash
+node web/build.mjs      # verifiziert gegen alle 3005 Vektoren + erzeugt index.html neu
+```
+
+Der Build verifiziert die eingebettete Ableitung vor dem Schreiben gegen
+`extension/test/vectors.json`; schlägt das fehl, wird keine Datei geschrieben.
+Das Drift-Gate in `checks.yml` erzwingt, dass die eingecheckte `index.html`
+aktuell ist. **Nach jeder Änderung an `extension/lib/*` muss `node web/build.mjs`
+laufen und das Ergebnis committet werden.**
+
+Verwendung/Hosting/Sicherheitsmodell im Detail: `web/README.md`. Kurz:
+
+- **`file://`** (Doppelklick) funktioniert — Chrome behandelt `file://` als
+  secure context, Web-Crypto steht zur Verfügung. Aber: `localStorage` teilt
+  sich bei `file://` einen origin über alle lokalen Dateien; der Tresor hängt
+  dann an „lokale Dateien im Profil", nicht an dieser Datei.
+- **`https://` intern hosten** (Webserver oder SharePoint — M365 ist vorhanden)
+  ist der empfohlene Rollout-Weg: sauberer origin-gebundener Tresor, zentrale
+  Aktualisierung, garantierter secure context. Braucht **keine** IT-Freigabe für
+  Erweiterungen.
+
+Die [Feld-Zuordnung EXE ↔ Extension](#feld-zuordnung-exe--extension-stolperfalle)
+gilt für die Web-Version unverändert: ins Feld „Master-Passwort" gehört der
+**entschlüsselte** Klartext aus `settings.json`, nicht der Fernet-Key. Die
+Passphrase schützt nur lokal den Tresor und beeinflusst die erzeugten
+Gerätepasswörter nicht.
 
 ## Chrome Web Store — Veröffentlichung
 
