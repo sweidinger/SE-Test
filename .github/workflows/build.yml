@@ -34,10 +34,10 @@ jobs:
             build-args: --onedir --noupx
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: '3.9'
 
@@ -99,7 +99,7 @@ jobs:
         zip -rq "$APP_NAME-$OS_TAG.zip" "$APP_NAME"*
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ runner.os }}-executable
         path: |
@@ -108,7 +108,7 @@ jobs:
 
     - name: Create Release (on tag)
       if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       with:
         files: |
           dist/*.zip
